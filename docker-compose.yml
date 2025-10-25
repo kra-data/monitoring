@@ -66,6 +66,8 @@ services:
 volumes:
   grafana-data: {}
 
+
 networks:
-  mon_net:
-    driver: bridge
+  app_net:
+    external: true
+    name: mdd_net
