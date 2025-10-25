@@ -68,6 +68,5 @@ volumes:
 
 
 networks:
-  app_net:
+  mdd_net:
     external: true
-    name: mdd_net
