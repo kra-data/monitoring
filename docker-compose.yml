@@ -16,7 +16,7 @@ services:
     ports:
       - "9090:9090"
     restart: unless-stopped
-    networks: [mon_net]
+    networks: [mdd_net]
 
   grafana:
     image: grafana/grafana:11.2.0
@@ -36,7 +36,7 @@ services:
       - prometheus
       - loki
     restart: unless-stopped
-    networks: [mon_net]
+    networks: [mdd_net]
 
   loki:
     image: grafana/loki:2.9.8
@@ -48,7 +48,7 @@ services:
     ports:
       - "3100:3100"
     restart: unless-stopped
-    networks: [mon_net]
+    networks: [mdd_net]
 
   promtail:
     image: grafana/promtail:2.9.8
@@ -61,7 +61,7 @@ services:
     depends_on:
       - loki
     restart: unless-stopped
-    networks: [mon_net]
+    networks: [mdd_net]
 
 volumes:
   grafana-data: {}
