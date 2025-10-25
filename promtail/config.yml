@@ -1,0 +1,22 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml # 읽은 위치 저장(중복 업로드 방지)
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Docker 컨테이너 stdout/stderr 로그
+  - job_name: docker
+    pipeline_stages:
+      - docker: {} # Docker json 로그 파싱(time, stream, log)
+      # 필요시 여기에 정규식/JSON 파서 추가 가능
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: docker
+          # 전체 컨테이너 로그 경로(기본)
+          __path__: /var/lib/docker/containers/*/*-json.log
