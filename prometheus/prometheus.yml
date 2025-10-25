@@ -10,7 +10,7 @@ rule_files:
 scrape_configs:
   # Spring Boot 메트릭
   - job_name: 'spring-app'
-    metrics_path: /actuator/prometheus
+    metrics_path: /api/actuator/prometheus
     static_configs:
       - targets:
           - spring_api:8080 # 예시: 앱 컨테이너명이 'mydreamday-api'일 때
