@@ -12,9 +12,7 @@ scrape_configs:
   - job_name: 'spring-app'
     metrics_path: /api/actuator/prometheus
     static_configs:
-      - targets:
-          - spring_api:8080 # 예시: 앱 컨테이너명이 'mydreamday-api'일 때
-          # - 127.0.0.1:8080      # 앱이 호스트에서 직접 띄워져 있다면 이런 식
+      - targets: ['backend-spring_api-1:8080']
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
