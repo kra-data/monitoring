@@ -12,7 +12,9 @@ scrape_configs:
   - job_name: 'spring-app'
     metrics_path: /api/actuator/prometheus
     static_configs:
-      - targets: ['spring-api:8080']
+      - targets:
+          - spring-api:8080
+          - spring-api-stage:8080
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
