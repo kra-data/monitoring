@@ -1,20 +1,28 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
-  external_labels:
-    env: prod
-
-rule_files:
-  - /etc/prometheus/alerts/*.yml
 
 scrape_configs:
-  # Spring Boot 메트릭
-  - job_name: 'spring-app'
+  # STAGE
+  - job_name: 'spring-stage'
+    scheme: https
     metrics_path: /api/actuator/prometheus
     static_configs:
-      - targets:
-          - spring-api:8080
-          - spring-api-stage:8080
+      - targets: ['api-stage.mydreamday.shop:443']
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
+    tls_config:
+      insecure_skip_verify: false # 공인 인증서면 false 유지
+
+  # PROD
+  - job_name: 'spring-prod'
+    scheme: https
+    metrics_path: /api/actuator/prometheus
+    static_configs:
+      - targets: ['api.mydreamday.shop:443']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+    tls_config:
+      insecure_skip_verify: false

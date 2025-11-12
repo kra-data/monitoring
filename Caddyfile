@@ -1,0 +1,48 @@
+# HTTP → HTTPS 리다이렉트
+http://{$DOMAIN_GRAFANA} {
+  redir https://{$DOMAIN_GRAFANA}{uri}
+}
+http://{$DOMAIN_LOKI} {
+  redir https://{$DOMAIN_LOKI}{uri}
+}
+
+# ───────── Grafana ─────────
+https://{$DOMAIN_GRAFANA} {
+  reverse_proxy 127.0.0.1:3000
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "no-referrer-when-downgrade"
+  }
+  log {
+    output stdout
+    format json
+  }
+}
+
+# ───────── Loki (promtail용) ─────────
+# push 엔드포인트만 외부에서 받기 (간단 베이직인증: 테스트/개발용)
+https://{$DOMAIN_LOKI} {
+  @push path /loki/api/v1/push
+  route @push {
+    basicauth {
+      promtail_user {$PROMTAIL_PASS_HASH}
+    }
+    reverse_proxy 127.0.0.1:3100
+  }
+
+  # (선택) 조회 API는 내부/VPN만. 필요 시 주석 해제 후 접근 제어 추가
+  # @query path /loki/*
+  # route @query {
+  #   reverse_proxy 127.0.0.1:3100
+  # }
+
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    X-Content-Type-Options "nosniff"
+  }
+  log {
+    output stdout
+    format json
+  }
+}

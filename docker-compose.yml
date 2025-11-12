@@ -5,38 +5,18 @@ services:
     image: prom/prometheus:v2.55.1
     container_name: prometheus
     command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.retention.time=7d"      # SSD 256GB → 7일 권장(더 줄여도 됨)
-      - "--storage.tsdb.path=/prometheus"
-      - "--web.enable-lifecycle"
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./alert-rules:/etc/prometheus/alerts:ro
       - ./prometheus/data:/prometheus
+    # 외부 직노출 금지: 로컬호스트만 바인딩
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
+    environment: [TZ=Asia/Seoul]
     restart: unless-stopped
-    networks: [mdd_net]
-
-  grafana:
-    image: grafana/grafana:11.2.0
-    container_name: grafana
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin        # 첫 접속 후 꼭 변경
-      - TZ=Asia/Seoul
-    volumes:
-      - grafana-data:/var/lib/grafana
-      # 선택: 자동 데이터소스/대시보드 프로비저닝(아래 6절 참고)
-      - ./grafana-provisioning/datasources:/etc/grafana/provisioning/datasources
-      - ./grafana-provisioning/dashboards:/etc/grafana/provisioning/dashboards
-    ports:
-      - "3000:3000"
-    depends_on:
-      - prometheus
-      - loki
-    restart: unless-stopped
-    networks: [mdd_net]
 
   loki:
     image: grafana/loki:2.9.8
@@ -46,27 +26,44 @@ services:
       - ./loki/config.yml:/etc/loki/config.yml:ro
       - ./loki/data:/loki
     ports:
-      - "3100:3100"
+      - "127.0.0.1:3100:3100"
+    environment: [TZ=Asia/Seoul]
     restart: unless-stopped
-    networks: [mdd_net]
 
-  promtail:
-    image: grafana/promtail:2.9.8
-    container_name: promtail
-    command: ["-config.file=/etc/promtail/config.yml"]
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASS}
+      - TZ=Asia/Seoul
     volumes:
-      - ./promtail/config.yml:/etc/promtail/config.yml:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/log:/var/log:ro
-    depends_on:
-      - loki
+      - grafana-data:/var/lib/grafana
+      - ./grafana-provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana-provisioning/dashboards:/etc/grafana/provisioning/dashboards
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on: [prometheus, loki]
     restart: unless-stopped
-    networks: [mdd_net]
+
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    restart: unless-stopped
+    environment:
+      - ACME_AGREE=true
+      - EMAIL=${CADDY_ACME_EMAIL}
+    # 80/443만 외부 공개
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [grafana, loki, prometheus]
 
 volumes:
   grafana-data: {}
-
-
-networks:
-  mdd_net:
-    external: true
+  caddy-data: {}
+  caddy-config: {}

@@ -1,0 +1,112 @@
+{
+  "id": null,
+  "uid": "mdd-spring-starter",
+  "title": "MyDreamDay • Spring Starter",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "tags": ["spring", "prometheus", "loki", "starter"],
+  "templating": {
+    "list": [
+      {
+        "name": "job",
+        "type": "query",
+        "datasource": "Prometheus",
+        "refresh": 2,
+        "query": "label_values(up, job)",
+        "includeAll": true,
+        "multi": true
+      },
+      {
+        "name": "instance",
+        "type": "query",
+        "datasource": "Prometheus",
+        "refresh": 2,
+        "query": "label_values(up, instance)",
+        "includeAll": true,
+        "multi": true
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Targets UP",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": "Prometheus",
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        { "expr": "sum(up{job=~\"$job\", instance=~\"$instance\"})", "legendFormat": "UP" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Requests per Second (5m rate)",
+      "gridPos": { "x": 6, "y": 0, "w": 18, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (job, instance) (rate(http_server_requests_seconds_count{job=~\"$job\", instance=~\"$instance\"}[5m]))",
+          "legendFormat": "{{job}} • {{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "5xx Error Rate (%)",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "100 * ( sum(rate(http_server_requests_seconds_count{status=~\"5..\", job=~\"$job\", instance=~\"$instance\"}[5m])) / sum(rate(http_server_requests_seconds_count{job=~\"$job\", instance=~\"$instance\"}[5m])) )",
+          "legendFormat": "5xx %"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "p95 Latency (s)",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{job=~\"$job\", instance=~\"$instance\"}[5m])))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Top 10 URIs by RPS (5m)",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "topk(10, sum by (uri) (rate(http_server_requests_seconds_count{job=~\"$job\", instance=~\"$instance\"}[5m])))",
+          "legendFormat": "{{uri}}"
+        }
+      ],
+      "options": { "showHeader": true }
+    },
+    {
+      "type": "timeseries",
+      "title": "JVM Memory Used (bytes)",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum by (area) (jvm_memory_used_bytes{job=~\"$job\", instance=~\"$instance\"})", "legendFormat": "{{area}}" }
+      ]
+    },
+    {
+      "type": "logs",
+      "title": "Recent Logs (Loki)",
+      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 8 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{job=\"spring-app\"}", "refId": "A" }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending" }
+    }
+  ]
+}
